@@ -631,7 +631,3 @@ body.sheet-open .credit {
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
-
-/* TEMPORARY: status-bar diagnostic */
-.diag summary { color: var(--text-2); font-size: 13px; cursor: pointer; }
-.diag pre { max-height: 40vh; overflow: auto; font-size: 10px; line-height: 1.4; white-space: pre-wrap; word-break: break-all; }

@@ -89,15 +89,7 @@ document.querySelectorAll(".sheet [data-close]").forEach((b) =>
   b.addEventListener("click", () => closeSheet(b.closest(".sheet").id)));
 $("scrim").addEventListener("click", () => closeSheet());
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); });
-$("credit-open").addEventListener("click", () => {
-  // TEMPORARY: status-bar diagnostic (see the logger in index.html)
-  $("diag-log").textContent = JSON.parse(localStorage.getItem("schemeLog") || "[]").join("\n");
-  openSheet("about");
-});
-$("diag-clear").addEventListener("click", () => {
-  localStorage.removeItem("schemeLog");
-  $("diag-log").textContent = "";
-});
+$("credit-open").addEventListener("click", () => openSheet("about"));
 
 /* ---------- Station card ---------- */
 

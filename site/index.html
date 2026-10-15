@@ -38,26 +38,6 @@
       };
       apply();
       document.addEventListener("visibilitychange", apply);
-
-      // TEMPORARY diagnostic for the status-bar colour: records the order of theme and
-      // visibility events in localStorage; shown under 關於本站 → 診斷紀錄. Remove after.
-      const KEY = "schemeLog", t0 = performance.now();
-      const log = (ev) => {
-        try {
-          const rows = JSON.parse(localStorage.getItem(KEY) || "[]");
-          const d = new Date();
-          rows.push(`${d.toTimeString().slice(0, 8)}.${String(d.getMilliseconds()).padStart(3, "0")} +${Math.round(performance.now() - t0)}ms ${ev}`
-            + ` vis=${document.visibilityState} dark=${dark.matches} scheme=${document.documentElement.dataset.scheme}`
-            + ` standalone=${navigator.standalone === true}`);
-          localStorage.setItem(KEY, JSON.stringify(rows.slice(-80)));
-        } catch {}
-      };
-      log("load");
-      dark.addEventListener("change", () => log("theme-change"));
-      for (const ev of ["visibilitychange", "pagehide", "pageshow", "freeze", "resume"]) {
-        document.addEventListener(ev, () => log(ev));
-      }
-      for (const ev of ["focus", "blur"]) window.addEventListener(ev, () => log(ev));
     })();
   </script>
   <link rel="stylesheet" href="style.css?v=__BUILD__">
@@ -137,12 +117,6 @@
       <p>資料來源：<a href="https://data.gov.tw/dataset/6065" target="_blank" rel="noopener">台灣中油公司加油站服務資訊</a>（政府資料開放平臺），依政府資料開放授權條款使用。</p>
       <p>資料更新日期：<span id="updated">—</span>。每週自動更新，實際營業狀況以現場為準。</p>
       <p class="muted">本站為非官方網站，與台灣中油公司無關。</p>
-      <!-- TEMPORARY: status-bar diagnostic; remove with the logger in <head> -->
-      <details class="diag">
-        <summary>診斷紀錄</summary>
-        <pre id="diag-log"></pre>
-        <button id="diag-clear" class="btn btn-ghost" type="button">清除紀錄</button>
-      </details>
     </div>
   </section>
 
