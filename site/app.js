@@ -1,6 +1,7 @@
 import {
   TYPES, FILTER_GROUPS, isAllDay, isOpenNow, matches, optionCounts, distanceKm, directionsUrl,
 } from "./filters.js?v=__BUILD__";
+import { photoSection } from "./photos.js?v=__BUILD__";
 
 const TAIWAN_BOUNDS = { south: 21.9, west: 119.4, north: 25.3, east: 122.0 };
 const TYPE_STORAGE_KEY = "stationType";
@@ -110,6 +111,7 @@ function renderStation(s, myPos) {
       open === false && el("span", { class: "tag closed" }, "休息中"),
       myPos && el("span", { class: "st-distance" }, formatDistance(distanceKm(myPos, s))),
     ),
+    s.pid && photoSection(s.pid),
     el("ul", { class: "st-rows" },
       el("li", {}, icon("place"), `${s.city}${s.district}${s.addr}`),
       el("li", {}, icon("clock"), hours),
