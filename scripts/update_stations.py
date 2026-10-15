@@ -12,13 +12,17 @@ import urllib.request
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from station_places import (  # noqa: E402
+    LAT_RANGE, LNG_RANGE, PLACES_PATH, PlacesError, apply, dump_stations, load,
+)
+
 # data.gov.tw lists /openData/getStationInfo; the server redirects that to this
 FEED_URL = "https://vipmbr.cpc.com.tw/opendata/getstationinfo"
-OUT_PATH = Path(__file__).resolve().parent.parent / "site" / "data" / "stations.json"
+ROOT = Path(__file__).resolve().parent.parent
+OUT_PATH = ROOT / "site" / "data" / "stations.json"
+REVIEW_DIR = ROOT / ".review"  # notes for the weekly review issue; not committed
 MIN_STATIONS = 1500  # the feed had 1,962 open stations in Oct 2026
-# Box around Taiwan, Penghu, Kinmen and Matsu
-LAT_RANGE = (21.5, 26.5)
-LNG_RANGE = (118.0, 122.5)
 HOURS_RE = re.compile(r"^\d{2}:\d{2}-\d{2}:\d{2}$")
 
 # Feed field -> short key. Value 1 means the station offers it.
@@ -86,6 +90,20 @@ def parse(json_bytes):
     return stations, skipped
 
 
+def build(stations, places, today):
+    """The published data, plus fixed stations whose CPC pin moved."""
+    stations = sorted(stations, key=lambda s: s["id"])
+    moved = apply(stations, places)
+    return {"updated": today, "source": "https://data.gov.tw/dataset/6065", "stations": stations}, moved
+
+
+def load_places_or_exit(path=PLACES_PATH):
+    try:
+        return load(path)
+    except PlacesError as e:
+        sys.exit(f"{path.name}: {e}; not updating.")
+
+
 def main():
     req = urllib.request.Request(FEED_URL, headers={"User-Agent": "taiwan-oil-station-map"})
     with urllib.request.urlopen(req, timeout=120) as resp:
@@ -97,16 +115,17 @@ def main():
     if len(stations) < MIN_STATIONS:
         sys.exit(f"Only {len(stations)} open stations (expected >= {MIN_STATIONS}); not updating.")
 
-    stations.sort(key=lambda s: s["id"])
+    places = load_places_or_exit()
     taipei = timezone(timedelta(hours=8))
-    data = {
-        "updated": datetime.now(taipei).strftime("%Y-%m-%d"),
-        "source": "https://data.gov.tw/dataset/6065",
-        "stations": stations,
-    }
+    data, moved = build(stations, places, datetime.now(taipei).strftime("%Y-%m-%d"))
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUT_PATH.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    print(f"Wrote {len(stations)} stations to {OUT_PATH}")
+    OUT_PATH.write_text(dump_stations(data), encoding="utf-8")
+    REVIEW_DIR.mkdir(exist_ok=True)
+    (REVIEW_DIR / "moved.json").write_text(json.dumps(moved), encoding="utf-8")
+    with_pid = sum(1 for s in data["stations"] if "pid" in s)
+    print(f"Wrote {len(stations)} stations ({with_pid} with a Google listing) to {OUT_PATH}")
+    if moved:
+        print(f"CPC moved {len(moved)} pin(s) that have an owner fix: {[m['id'] for m in moved]}")
 
 
 if __name__ == "__main__":
