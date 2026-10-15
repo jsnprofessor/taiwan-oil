@@ -63,6 +63,26 @@ class Run(unittest.TestCase):
         self.assertNotIn("A", places)
         self.assertNotIn("pid", s)
 
+    def test_matched_again_keeps_the_owners_fix(self):
+        s = station("A", addr="新地址9號")
+        fix = {"lat": 22.76, "lng": 120.23, "cpc": [25.04, 121.51]}
+        places = {"A": {"pid": "OLD", "src": "auto", "seen": "測試站|中正路1號", "far": 5000, "fix": fix}}
+        report = run([s], places, google({"測試站": [listing(PID)]}))
+        self.assertEqual(report["matched"], ["A"])
+        self.assertEqual(places["A"], {"pid": PID, "src": "auto", "seen": seen_key(s), "fix": fix})
+
+    def test_doubtful_rematch_keeps_entry_and_fix_and_keeps_being_retried(self):
+        s = station("A", addr="新地址9號")
+        s["pid"] = PID
+        fix = {"lat": 22.76, "lng": 120.23, "cpc": [25.04, 121.51]}
+        old = {"pid": PID, "src": "auto", "seen": "測試站|中正路1號", "fix": fix}
+        places = {"A": dict(old)}
+        report = run([s], places, google({}))
+        self.assertEqual(report["doubtful"], [{"id": "A", "pid": None, "verdict": "none"}])
+        self.assertEqual(places["A"], {**old, "pid": None})  # old seen kept
+        self.assertNotIn("pid", s)
+        self.assertEqual([x["id"] for x in todo([s], places)], ["A"])  # retried next week
+
     def test_far_match_is_saved_and_listed_until_fixed(self):
         s = station("A", name="南寮漁船站", addr="彌陀區南寮里漁港路73號", lat=24.84566, lng=120.92791)
         far = listing(PID, "台灣中油 南寮站(直營站附漁船加油)", 22.764367, 120.237296, "827高雄市彌陀區南寮里漁港路73號")

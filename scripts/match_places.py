@@ -51,15 +51,22 @@ def run(stations, places, search, limit=MAX_PER_RUN):
             break
         done += 1
         sid = s["id"]
+        old = places.get(sid) or {}
         if c and c["verdict"] in (MATCH, FAR):
             entry = {"pid": c["pid"], "src": "auto", "seen": seen_key(s)}
-            if c["verdict"] == FAR:
+            if "fix" in old:
+                entry["fix"] = old["fix"]  # the owner's hand-entered coordinates survive a re-match
+            elif c["verdict"] == FAR:
                 entry["far"] = c["dist"]
             places[sid] = entry
             s["pid"] = c["pid"]
             report["far" if c["verdict"] == FAR else "matched"].append(sid)
         else:
-            places.pop(sid, None)  # an old automatic match for a changed station is no longer trusted
+            if "fix" in old:
+                # Keep the owner's fix. Old `seen` stays, so an auto entry is retried weekly and stays in the issue.
+                places[sid] = {**old, "pid": None}
+            else:
+                places.pop(sid, None)  # an old automatic match for a changed station is no longer trusted
             s.pop("pid", None)
             report["doubtful"].append({"id": sid, "pid": c["pid"] if c else None,
                                        "verdict": c["verdict"] if c else "none"})

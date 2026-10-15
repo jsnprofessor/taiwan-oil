@@ -26,7 +26,7 @@ A mobile-friendly map of CPC (台灣中油) gas stations, hosted on GitHub Pages
 3. Create an **API key**. Under restrictions:
    - Application restriction: **Websites**. Add `https://<your-username>.github.io/*`
      (and `http://localhost:8000/*` for local testing).
-   - API restriction: **Maps JavaScript API** only.
+   - API restriction: **Maps JavaScript API** and **Places API (New)**.
 4. Create a **Map ID** (Map Management → Create, type JavaScript). Markers need it.
 5. Recommended: set a daily quota cap on map loads and a budget alert, so a traffic spike
    can't cause a surprise bill.

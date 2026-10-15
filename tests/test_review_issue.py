@@ -29,6 +29,7 @@ class Build(unittest.TestCase):
              "reviewed_changed": ["A"], "error": "HTTPError: HTTP Error 403: Forbidden", "remaining": 7},
             STATIONS)
         self.assertIn("2.4 公里", text)
+        self.assertIn('為這些站加上 fix，並把 src 改成 "reviewed"', text)
         self.assertIn("https://www.google.com/maps?q=25.1,121.6", text)  # CPC's new pin
         self.assertIn("src", text)
         self.assertIn("403", text)

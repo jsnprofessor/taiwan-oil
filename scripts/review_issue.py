@@ -34,7 +34,7 @@ def build(moved, match, stations_by_id):
     section("找不到或不確定的 Google 地圖配對（下週會再試）", [
         _line(stations_by_id, d["id"], f" · [Google 候選]({_listing(d['pid'])})" if d.get("pid") else "")
         for d in match.get("doubtful", [])])
-    section("位置可能有誤：請在 data/places.json 為這些站加上 fix", [
+    section('位置可能有誤：請在 data/places.json 為這些站加上 fix，並把 src 改成 "reviewed"', [
         _line(stations_by_id, f["id"], f" · 相距 {f['far'] / 1000:.1f} 公里 · [Google 地圖上的位置]({_listing(f['pid'])})")
         for f in match.get("far_unfixed", [])])
     section('CPC 改了已檢查站點的名稱或地址（要重新配對，把該站的 src 改成 "auto"）', [
