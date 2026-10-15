@@ -235,58 +235,9 @@ svg { fill: currentColor; }
 .fab.on { color: var(--accent); }
 
 body.sheet-open .fabs,
-body.sheet-open .credit,
-body.sheet-open .install-banner {
+body.sheet-open .credit {
   opacity: 0;
   pointer-events: none;
-}
-
-/* ---------- Add to home screen ---------- */
-
-.install-banner {
-  position: fixed;
-  left: 12px;
-  right: 12px;
-  bottom: calc(30px + var(--bottom-inset));
-  z-index: 15;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  max-width: 536px;
-  margin: 0 auto;
-  padding: 10px 6px 10px 10px;
-  background: var(--surface);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  transition: opacity .2s;
-}
-
-.install-banner img { flex: none; border-radius: 9px; }
-
-.install-banner p {
-  flex: 1;
-  margin: 0;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.install-banner .btn { flex: none; height: 40px; padding: 0 16px; font-size: 15px; }
-
-/* make room above the banner (60px tall + 10px gap) */
-body.has-banner .fabs { transform: translateY(-70px); }
-body.has-banner .credit { opacity: 0; pointer-events: none; }
-
-.install-body { font-size: 16px; line-height: 1.7; }
-.install-body p { margin: 4px 0 12px; }
-.install-steps { margin: 4px 0 12px; padding-left: 1.4em; }
-.install-steps li { padding: 6px 0; }
-
-.install-body svg {
-  width: 20px;
-  height: 20px;
-  margin: 0 2px;
-  vertical-align: -4px;
-  color: var(--accent);
 }
 
 .toast {
@@ -565,7 +516,6 @@ body.has-banner .credit { opacity: 0; pointer-events: none; }
 }
 
 .about-body a { color: var(--accent); }
-.about-body .btn { width: 100%; margin-top: 8px; }
 .muted { color: var(--text-2); }
 
 @media (prefers-reduced-motion: reduce) {
