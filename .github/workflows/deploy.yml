@@ -11,6 +11,7 @@ permissions:
   contents: write # commit refreshed data
   pages: write
   id-token: write
+  issues: write # the 需要檢查的加油站 review issue
 
 concurrency:
   group: pages
@@ -29,9 +30,20 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Run tests
+        run: |
+          python3 -I -m unittest discover -s tests -p "test_*.py"
+          node --test tests/*.test.js
+
       # If the download or checks fail, the job stops here and the live site keeps its old data.
       - name: Download station data
         run: python3 -I scripts/update_stations.py
+
+      # Never fails the job: problems go to the review issue instead.
+      - name: Match new stations to Google Maps
+        env:
+          PLACES_API_KEY: ${{ secrets.PLACES_API_KEY }}
+        run: python3 -I scripts/match_places.py
 
       # Commits every run because the "updated" date changes. This also keeps the
       # repo active so GitHub doesn't turn off the schedule after 60 quiet days.
@@ -39,12 +51,32 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add site/data/stations.json
+          git add site/data/stations.json data/places.json
           if git diff --cached --quiet; then
             echo "No data changes."
           else
             git commit -m "Update station data"
             git push
+          fi
+
+      - name: Update review issue
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 -I scripts/review_issue.py
+          title="需要檢查的加油站"
+          num=$(gh issue list --state open --limit 100 --json number,title \
+            --jq ".[] | select(.title == \"$title\") | .number" | head -n1)
+          if [ -s .review/issue.md ]; then
+            if [ -z "$num" ]; then
+              gh issue create --title "$title" --body-file .review/issue.md
+            elif [ "$(gh issue view "$num" --json body --jq .body)" != "$(cat .review/issue.md)" ]; then
+              gh issue edit "$num" --body-file .review/issue.md
+              gh issue comment "$num" --body "清單已更新。"
+            fi
+          elif [ -n "$num" ]; then
+            gh issue close "$num" --comment "全部處理完畢。"
           fi
 
       - name: Insert Google Maps settings

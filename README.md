@@ -12,6 +12,9 @@ A mobile-friendly map of CPC (台灣中油) gas stations, hosted on GitHub Pages
 - `site/filters.js` – filter rules; tested by `node --test tests/`
 - `scripts/update_stations.py` – downloads the feed and writes `site/data/stations.json`
 - `scripts/serve_local.sh` – local preview at http://localhost:8000
+- `data/places.json` – each station's Google Maps listing (place ID) and owner-entered pin fixes; reviewed by hand
+- `scripts/match_places.py` – weekly: matches new or changed stations to Google listings (at most 50 per run)
+- `scripts/review_issue.py` – writes the 「需要檢查的加油站」 issue when something needs checking
 - `.github/workflows/deploy.yml` – weekly update + deploy
 
 ## One-time setup
@@ -42,6 +45,16 @@ then $7 per 1,000. Directions links open Google Maps directly and don't use the 
    - `GOOGLE_MAP_ID`
 3. Settings → Pages → Source: **GitHub Actions**.
 4. Actions → "Update data and deploy" → **Run workflow**.
+
+### Station photos (Google Places API)
+
+1. A second API key restricted to **Places API (New)**, with no application restriction, stored as the
+   repository **secret** `PLACES_API_KEY` (`gh secret set PLACES_API_KEY < keyfile`).
+2. Add **Places API (New)** to the website key's allowed APIs.
+3. Google Maps Platform → Quotas → Places API (New): GetPhotoMedia **33/day** (stays within the free
+   1,000 photos a month), SearchText **150/day**, unused methods **1/day**. Add a US$1 billing alert.
+4. When the 「需要檢查的加油站」 issue opens, edit `data/places.json`: add `"fix": {"lat": …, "lng": …, "cpc": [CPC lat, CPC lng]}`
+   for a wrong pin, set `"pid"` to a place ID (or `null` for not on Google), and set `"src": "reviewed"`.
 
 ## Local preview
 
