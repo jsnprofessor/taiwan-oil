@@ -1,6 +1,7 @@
 import {
   TYPES, FILTER_GROUPS, isAllDay, isOpenNow, matches, optionCounts, distanceKm,
 } from "./filters.js?v=__BUILD__";
+import { installPlatform, bannerDue } from "./install.js?v=__BUILD__";
 
 const TAIWAN_BOUNDS = { south: 21.9, west: 119.4, north: 25.3, east: 122.0 };
 const TYPE_STORAGE_KEY = "stationType";
@@ -82,6 +83,76 @@ document.querySelectorAll(".sheet [data-close]").forEach((b) =>
 $("scrim").addEventListener("click", () => closeSheet());
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); });
 $("credit-open").addEventListener("click", () => openSheet("about"));
+
+/* ---------- Add to home screen ---------- */
+
+const INSTALL_DISMISS_KEY = "installDismissedAt";
+const installTarget = installPlatform({
+  ua: navigator.userAgent,
+  standalone: matchMedia("(display-mode: standalone)").matches || navigator.standalone === true,
+  maxTouchPoints: navigator.maxTouchPoints,
+});
+// Android Chrome's own install dialog, if it offers one; iPhones never do
+let installPrompt = null;
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  installPrompt = e;
+});
+window.addEventListener("appinstalled", () => {
+  hideInstallBanner();
+  $("install-open").hidden = true;
+});
+
+const steps = (...items) => el("ol", { class: "install-steps" }, ...items.map((parts) => el("li", {}, ...parts)));
+const INSTALL_HELP = {
+  ios: () => steps(
+    ["點選 Safari 的「分享」", icon("share"), "（沒看到的話，先點「", icon("more-h"), "」）"],
+    ["向下捲動，選擇「加入主畫面」"],
+    ["點選右上角的「加入」"],
+  ),
+  android: () => steps(
+    ["點選 Chrome 右上角的「", icon("more-v"), "」"],
+    ["選擇「加入主畫面」或「安裝應用程式」"],
+    ["點選「安裝」"],
+  ),
+};
+const canInstall = installTarget in INSTALL_HELP;
+$("install-open").hidden = !canInstall;
+
+async function startInstall() {
+  if (installPrompt) {
+    const prompt = installPrompt;
+    installPrompt = null; // each prompt can only be shown once
+    prompt.prompt();
+    if ((await prompt.userChoice).outcome === "accepted") hideInstallBanner();
+    return;
+  }
+  $("install-body").replaceChildren(INSTALL_HELP[installTarget]());
+  openSheet("install");
+}
+
+function showInstallBanner() {
+  if (!canInstall || !bannerDue(localStorage.getItem(INSTALL_DISMISS_KEY))) return;
+  $("install-banner").hidden = false;
+  document.body.classList.add("has-banner");
+}
+
+function hideInstallBanner() {
+  $("install-banner").hidden = true;
+  document.body.classList.remove("has-banner");
+}
+
+function dismissInstallBanner() {
+  localStorage.setItem(INSTALL_DISMISS_KEY, String(Date.now()));
+  hideInstallBanner();
+}
+
+$("install-open").addEventListener("click", startInstall);
+$("install-banner-close").addEventListener("click", dismissInstallBanner);
+$("install-banner-add").addEventListener("click", () => {
+  dismissInstallBanner(); // they've seen the steps; the 關於 sheet keeps a button
+  startInstall();
+});
 
 /* ---------- Station card ---------- */
 
@@ -369,6 +440,7 @@ async function main() {
   });
 
   apply();
+  mapReady.then(showInstallBanner);
   // keep 營業中 and pin colours current
   setInterval(() => apply(), 5 * 60 * 1000);
 }
