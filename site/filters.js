@@ -109,10 +109,34 @@ export function distanceKm(p, q) {
   return 6371 * 2 * Math.asin(Math.sqrt(h));
 }
 
-// Google Maps directions; the place ID routes to the station's own listing
-// (e.g. the right side of a highway service area), coordinates are the fallback.
+// "台灣中油 康寧站, 台北市內湖區康寧路三段30號": Google's recommended way to name a
+// place in Maps links, without CPC's notes such as (備註:…).
+export function placeLabel(s) {
+  // drop notes in brackets, then any unmatched bracket left in CPC's data
+  const withoutNotes = (text) => text.replace(/[（(][^)）]*[)）]/g, "").replace(/[()（）]/g, "").trim();
+  const base = withoutNotes(s.name);
+  const name = base.endsWith("站") ? base : `${base}站`;
+  const addr = withoutNotes(s.addr || "");
+  const where = addr.startsWith(s.city) ? addr : `${s.city}${s.district || ""}${addr}`;
+  return `台灣中油 ${name}, ${where}`;
+}
+
+// Google Maps directions. The Google Maps iPhone app ignores place IDs in links, so the
+// destination names the station; the place ID still picks the exact listing elsewhere.
+// Stations without a Google listing fall back to coordinates.
 export function directionsUrl(s) {
-  const params = new URLSearchParams({ api: "1", destination: `${s.lat},${s.lng}`, travelmode: "driving" });
-  if (s.pid) params.set("destination_place_id", s.pid);
+  const params = new URLSearchParams({ api: "1", travelmode: "driving" });
+  if (s.pid) {
+    params.set("destination", placeLabel(s));
+    params.set("destination_place_id", s.pid);
+  } else {
+    params.set("destination", `${s.lat},${s.lng}`);
+  }
   return `https://www.google.com/maps/dir/?${params}`;
+}
+
+// The station's Google listing (photos, reviews), in the documented search format.
+export function placeUrl(s) {
+  const params = new URLSearchParams({ api: "1", query: placeLabel(s), query_place_id: s.pid });
+  return `https://www.google.com/maps/search/?${params}`;
 }

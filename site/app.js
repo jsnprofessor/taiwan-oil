@@ -1,5 +1,5 @@
 import {
-  TYPES, FILTER_GROUPS, isAllDay, isOpenNow, matches, optionCounts, distanceKm, directionsUrl,
+  TYPES, FILTER_GROUPS, isAllDay, isOpenNow, matches, optionCounts, distanceKm, directionsUrl, placeUrl,
 } from "./filters.js?v=__BUILD__";
 import { photoSection } from "./photos.js?v=__BUILD__";
 
@@ -111,7 +111,7 @@ function renderStation(s, myPos) {
       open === false && el("span", { class: "tag closed" }, "休息中"),
       myPos && el("span", { class: "st-distance" }, formatDistance(distanceKm(myPos, s))),
     ),
-    s.pid && photoSection(s.pid),
+    s.pid && photoSection(s.pid, placeUrl(s)),
     el("ul", { class: "st-rows" },
       el("li", {}, icon("place"), `${s.city}${s.district}${s.addr}`),
       el("li", {}, icon("clock"), hours),

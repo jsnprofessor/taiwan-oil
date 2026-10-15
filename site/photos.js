@@ -78,11 +78,10 @@ async function fill(box, pid) {
 }
 
 // Reserves a 16:9 area straight away so the card doesn't jump when photos arrive.
-export function photoSection(pid) {
+export function photoSection(pid, listingUrl) {
   const box = node("div", "st-photos");
   box.setAttribute("aria-label", "加油站相片");
   fill(box, pid);
-  const listing = `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(pid)}`;
   return node("div", "st-photo-block", box,
-    node("div", "st-photo-credit", node("span", "", "Google Maps"), link(listing, "在 Google 地圖查看更多相片")));
+    node("div", "st-photo-credit", node("span", "", "Google Maps"), link(listingUrl, "在 Google 地圖查看更多相片")));
 }

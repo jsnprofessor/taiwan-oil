@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
-  FILTER_GROUPS, TYPES, isOpenNow, matches, optionCounts, distanceKm, directionsUrl,
+  FILTER_GROUPS, TYPES, isOpenNow, matches, optionCounts, distanceKm, directionsUrl, placeLabel, placeUrl,
 } from "../site/filters.js";
 
 // 2026-10-15 12:00 in Taiwan
@@ -68,13 +68,46 @@ test("every filter option matches at least one station in the real data", () => 
   }
 });
 
-test("directionsUrl routes to the exact Google listing when a place ID is known", () => {
-  const s = { lat: 25.0726, lng: 121.6084, pid: "ChIJA-pXq72sQjQRVY0AMCPVELc" };
-  const url = new URL(directionsUrl(s));
+const KANGNING = {
+  name: "康寧", city: "台北市", district: "內湖區", addr: "康寧路三段30號",
+  lat: 25.0726, lng: 121.6084, pid: "ChIJA-pXq72sQjQRVY0AMCPVELc",
+};
+
+test("placeLabel is the station's name and address, without CPC's notes", () => {
+  assert.equal(placeLabel(KANGNING), "台灣中油 康寧站, 台北市內湖區康寧路三段30號");
+  assert.equal(placeLabel({ name: "鎖港漁船站", city: "澎湖縣", addr: "馬公市鎖港里293號(備註:星期六日暫停營業)" }),
+    "台灣中油 鎖港漁船站, 澎湖縣馬公市鎖港里293號");
+  assert.equal(placeLabel({ name: "忠孝路", city: "嘉義市", district: "東區", addr: "嘉義市東區忠孝路808號" }),
+    "台灣中油 忠孝路站, 嘉義市東區忠孝路808號");
+  assert.equal(placeLabel({ name: "將軍漁船站(僅星期一營業)", city: "台南市", district: "將軍區", addr: "長沙里126-6號" }),
+    "台灣中油 將軍漁船站, 台南市將軍區長沙里126-6號");
+  assert.equal(placeLabel({ name: "四維三路站(愛心站)", city: "高雄市", district: "苓雅區", addr: "永定街93號" }),
+    "台灣中油 四維三路站, 高雄市苓雅區永定街93號");
+  assert.equal(placeLabel({ name: "民族", city: "高雄市", district: "三民區", addr: "民族一路418號)" }),
+    "台灣中油 民族站, 高雄市三民區民族一路418號");
+});
+
+// The Google Maps iPhone app ignores place IDs in links, so the destination must
+// name the station; the place ID still helps where it is supported.
+test("directionsUrl names the station when it has a Google listing", () => {
+  const url = new URL(directionsUrl(KANGNING));
   assert.equal(url.origin + url.pathname, "https://www.google.com/maps/dir/");
   assert.equal(url.searchParams.get("api"), "1");
-  assert.equal(url.searchParams.get("destination"), "25.0726,121.6084");
-  assert.equal(url.searchParams.get("destination_place_id"), s.pid);
+  assert.equal(url.searchParams.get("destination"), placeLabel(KANGNING));
+  assert.equal(url.searchParams.get("destination_place_id"), KANGNING.pid);
   assert.equal(url.searchParams.get("travelmode"), "driving");
-  assert.equal(new URL(directionsUrl({ lat: 1, lng: 2 })).searchParams.has("destination_place_id"), false);
+});
+
+test("directionsUrl uses coordinates for a station without a Google listing", () => {
+  const url = new URL(directionsUrl({ ...KANGNING, pid: undefined }));
+  assert.equal(url.searchParams.get("destination"), "25.0726,121.6084");
+  assert.equal(url.searchParams.has("destination_place_id"), false);
+});
+
+test("placeUrl opens the station's Google listing in the documented search format", () => {
+  const url = new URL(placeUrl(KANGNING));
+  assert.equal(url.origin + url.pathname, "https://www.google.com/maps/search/");
+  assert.equal(url.searchParams.get("api"), "1");
+  assert.equal(url.searchParams.get("query"), placeLabel(KANGNING));
+  assert.equal(url.searchParams.get("query_place_id"), KANGNING.pid);
 });
