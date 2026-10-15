@@ -343,6 +343,16 @@ body.sheet-open .credit {
   transition: transform .32s var(--ease), visibility 0s;
 }
 
+/* Station card: sheet.js sets its height (half or nearly full screen) */
+#station {
+  max-height: none;
+  overflow-y: hidden;
+  transition: transform .32s var(--ease), height .32s var(--ease), visibility 0s linear .32s;
+}
+
+#station.open { transition: transform .32s var(--ease), height .32s var(--ease), visibility 0s; }
+#station.full { overflow-y: auto; }
+
 .handle {
   width: 36px;
   height: 5px;
@@ -561,6 +571,7 @@ body.sheet-open .credit {
   font-size: 14px;
 }
 
+/* pinned to the bottom of the card (with .sheet-foot) so it shows at half height too */
 .st-actions {
   display: flex;
   gap: 10px;

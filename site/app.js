@@ -2,6 +2,7 @@ import {
   TYPES, FILTER_GROUPS, isAllDay, isOpenNow, matches, optionCounts, distanceKm, directionsUrl, placeUrl,
 } from "./filters.js?v=__BUILD__";
 import { photoSection } from "./photos.js?v=__BUILD__";
+import { attachSheetDrag } from "./sheet.js?v=__BUILD__";
 
 const TAIWAN_BOUNDS = { south: 21.9, west: 119.4, north: 25.3, east: 122.0 };
 const TYPE_STORAGE_KEY = "stationType";
@@ -86,6 +87,8 @@ $("credit-open").addEventListener("click", () => openSheet("about"));
 
 /* ---------- Station card ---------- */
 
+const stationSheet = attachSheetDrag($("station"), () => closeSheet("station"));
+
 function formatDistance(km) {
   return km < 1 ? `${Math.round(km * 1000)} 公尺` : `${km.toFixed(km < 10 ? 1 : 0)} 公里`;
 }
@@ -125,11 +128,12 @@ function renderStation(s, myPos) {
     services.length > 0 && chips(services),
     pays.length > 0 && el("div", { class: "st-section" }, "付款方式"),
     pays.length > 0 && chips(pays),
-    el("div", { class: "st-actions" },
+    el("div", { class: "st-actions sheet-foot" },
       el("a", { class: "btn btn-primary", href: directionsUrl(s), target: "_blank", rel: "noopener" }, icon("nav"), "導航"),
       tel && el("a", { class: "btn btn-secondary", href: `tel:${tel}` }, icon("phone"), "撥打電話"),
     ),
   ].filter(Boolean));
+  stationSheet.open();
   openSheet("station");
 }
 
@@ -218,6 +222,7 @@ async function main() {
   });
 
   sheetCloseHandlers.station = () => {
+    stationSheet.closed();
     const previous = selected;
     selected = null;
     if (previous) {
