@@ -137,6 +137,16 @@ function renderStation(s, myPos) {
 /* ---------- Main ---------- */
 
 async function main() {
+  // Draw the type selector before waiting on Maps and data so the header
+  // doesn't grow when they arrive. Counts and click handlers come later.
+  const savedType = TYPES.some((t) => t.key === localStorage.getItem(TYPE_STORAGE_KEY))
+    ? localStorage.getItem(TYPE_STORAGE_KEY) : "all";
+  const typeButtons = TYPES.map((t) => el("button",
+    { type: "button", role: "radio", "data-type": t.key, "aria-checked": String(t.key === savedType) },
+    el("span", { class: "label" }, t.label),
+    el("span", { class: "count" }, "\u00a0"))); // keeps the count line's height
+  $("types").replaceChildren(...typeButtons);
+
   const [{ Map }, { AdvancedMarkerElement }, data] = await Promise.all([
     google.maps.importLibrary("maps"),
     google.maps.importLibrary("marker"),
@@ -166,8 +176,7 @@ async function main() {
 
   // ----- markers -----
   const state = {
-    type: TYPES.some((t) => t.key === localStorage.getItem(TYPE_STORAGE_KEY))
-      ? localStorage.getItem(TYPE_STORAGE_KEY) : "all",
+    type: savedType,
     keys: new Set(),
     query: "",
   };
@@ -221,18 +230,11 @@ async function main() {
   });
 
   // ----- type selector -----
-  const typeButtons = TYPES.map((t) => {
-    const b = el("button", { type: "button", role: "radio", "data-type": t.key },
-      el("span", { class: "label" }, t.label),
-      el("span", { class: "count" }, ""));
-    b.addEventListener("click", () => {
-      state.type = t.key;
-      localStorage.setItem(TYPE_STORAGE_KEY, t.key);
-      apply();
-    });
-    return b;
-  });
-  $("types").replaceChildren(...typeButtons);
+  typeButtons.forEach((b, i) => b.addEventListener("click", () => {
+    state.type = TYPES[i].key;
+    localStorage.setItem(TYPE_STORAGE_KEY, TYPES[i].key);
+    apply();
+  }));
 
   // ----- filter sheet -----
   const chipButtons = {};
