@@ -9,11 +9,11 @@ import json
 import re
 import sys
 import urllib.request
-import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-FEED_URL = "https://vipmbr.cpc.com.tw/CPCSTN/STNWebService.asmx/getStationInfo_XML"
+# data.gov.tw lists /openData/getStationInfo; the server redirects that to this
+FEED_URL = "https://vipmbr.cpc.com.tw/opendata/getstationinfo"
 OUT_PATH = Path(__file__).resolve().parent.parent / "site" / "data" / "stations.json"
 MIN_STATIONS = 1500  # the feed had 1,962 open stations in Oct 2026
 # Box around Taiwan, Penghu, Kinmen and Matsu
@@ -21,7 +21,7 @@ LAT_RANGE = (21.5, 26.5)
 LNG_RANGE = (118.0, 122.5)
 HOURS_RE = re.compile(r"^\d{2}:\d{2}-\d{2}:\d{2}$")
 
-# Feed field -> short key. Value "1" means the station offers it.
+# Feed field -> short key. Value 1 means the station offers it.
 FLAGS = {
     "無鉛92": "u92",
     "無鉛95": "u95",
@@ -41,13 +41,18 @@ FLAGS = {
 
 
 def text(row, tag):
-    return (row.findtext(tag) or "").strip()
+    # the feed mixes types: flags are numbers (1), 營業中 is text ("1")
+    value = row.get(tag)
+    return "" if value is None else str(value).strip()
 
 
-def parse(xml_bytes):
-    root = ET.fromstring(xml_bytes)
+def parse(json_bytes):
+    rows = json.loads(json_bytes.decode("utf-8-sig"))  # tolerate a byte-order mark
+    if not isinstance(rows, list) or not all(isinstance(r, dict) for r in rows):
+        sys.exit("Feed is not a list of stations; not updating.")
     stations, skipped = [], []
-    for row in root.findall("Table"):
+    for row in rows:
+        # 1 = open; 3 = not operating (CPC also leaves these out of its other station lists)
         if text(row, "營業中") != "1":
             continue
         name = text(row, "站名")
@@ -84,9 +89,9 @@ def parse(xml_bytes):
 def main():
     req = urllib.request.Request(FEED_URL, headers={"User-Agent": "taiwan-oil-station-map"})
     with urllib.request.urlopen(req, timeout=120) as resp:
-        xml_bytes = resp.read()
+        json_bytes = resp.read()
 
-    stations, skipped = parse(xml_bytes)
+    stations, skipped = parse(json_bytes)
     if skipped:
         print(f"Skipped {len(skipped)} stations with bad coordinates: {skipped[:20]}")
     if len(stations) < MIN_STATIONS:
