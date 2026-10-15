@@ -21,22 +21,21 @@
   -webkit-tap-highlight-color: transparent;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --accent: #6ea8ff;
-    --accent-soft: #1e2a3d;
-    --on-accent: #0b1b33;
-    --text: #eef1f5;
-    --text-2: #a3abb7;
-    --surface: #1d2026;
-    --surface-2: #272b33;
-    --line: #333944;
-    --open: #6dd58c;
-    --open-soft: #1c3324;
-    --closed: #ff8a80;
-    --closed-soft: #3a2220;
-      --shadow: 0 2px 6px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .4);
-  }
+/* set by the script in index.html, which ignores the system theme while the page is hidden */
+:root[data-scheme="dark"] {
+  --accent: #6ea8ff;
+  --accent-soft: #1e2a3d;
+  --on-accent: #0b1b33;
+  --text: #eef1f5;
+  --text-2: #a3abb7;
+  --surface: #1d2026;
+  --surface-2: #272b33;
+  --line: #333944;
+  --open: #6dd58c;
+  --open-soft: #1c3324;
+  --closed: #ff8a80;
+  --closed-soft: #3a2220;
+  --shadow: 0 2px 6px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .4);
 }
 
 * { box-sizing: border-box; }

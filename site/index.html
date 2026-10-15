@@ -24,6 +24,21 @@
   <meta name="apple-mobile-web-app-title" content="中油加油站">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <script>
+    // Follow the system theme only while visible. iOS briefly renders backgrounded
+    // apps in the other appearance for app-switcher snapshots, and the status bar
+    // keeps whatever colour the page had at that moment.
+    (() => {
+      const dark = matchMedia("(prefers-color-scheme: dark)");
+      const apply = () => {
+        if (document.visibilityState === "hidden") return;
+        document.documentElement.dataset.scheme = dark.matches ? "dark" : "light";
+      };
+      apply();
+      dark.addEventListener("change", apply);
+      document.addEventListener("visibilitychange", apply);
+    })();
+  </script>
   <link rel="stylesheet" href="style.css?v=__BUILD__">
 </head>
 <body>
