@@ -61,6 +61,7 @@ function openSheet(id) {
   if (openSheetId && openSheetId !== id) closeSheet(openSheetId);
   openSheetId = id;
   const sheet = $(id);
+  sheetDrags[id].open(); // after the content is filled, before it shows
   sheet.classList.add("open");
   sheet.setAttribute("aria-hidden", "false");
   sheet.scrollTop = 0;
@@ -76,8 +77,13 @@ function closeSheet(id = openSheetId) {
   if (openSheetId === id) openSheetId = null;
   document.body.classList.remove("sheet-open");
   $("scrim").hidden = true;
+  sheetDrags[id].closed();
   sheetCloseHandlers[id]?.();
 }
+
+// The station card has half and full heights; the shorter sheets only drag down to close.
+const sheetDrags = Object.fromEntries(["station", "filters", "about"].map((id) =>
+  [id, attachSheetDrag($(id), () => closeSheet(id), { hasHalf: id === "station" })]));
 
 document.querySelectorAll(".sheet [data-close]").forEach((b) =>
   b.addEventListener("click", () => closeSheet(b.closest(".sheet").id)));
@@ -95,7 +101,6 @@ $("diag-clear").addEventListener("click", () => {
 
 /* ---------- Station card ---------- */
 
-const stationSheet = attachSheetDrag($("station"), () => closeSheet("station"));
 
 function formatDistance(km) {
   return km < 1 ? `${Math.round(km * 1000)} 公尺` : `${km.toFixed(km < 10 ? 1 : 0)} 公里`;
@@ -141,7 +146,6 @@ function renderStation(s, myPos) {
       tel && el("a", { class: "btn btn-secondary", href: `tel:${tel}` }, icon("phone"), "撥打電話"),
     ),
   ].filter(Boolean));
-  stationSheet.open();
   openSheet("station");
 }
 
@@ -230,7 +234,6 @@ async function main() {
   });
 
   sheetCloseHandlers.station = () => {
-    stationSheet.closed();
     const previous = selected;
     selected = null;
     if (previous) {
