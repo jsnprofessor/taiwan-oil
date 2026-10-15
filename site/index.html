@@ -25,9 +25,11 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <script>
-    // Follow the system theme only while visible. iOS briefly renders backgrounded
-    // apps in the other appearance for app-switcher snapshots, and the status bar
-    // keeps whatever colour the page had at that moment.
+    // Take the system theme only when the page loads and when you come back to it, never
+    // while it is open: when you leave the app, iOS flips the theme for its app-switcher
+    // snapshot ~70 ms before marking the page hidden, and the status bar keeps whatever
+    // colour the page had then. A theme change made while the app is open applies the
+    // next time you return to it.
     (() => {
       const dark = matchMedia("(prefers-color-scheme: dark)");
       const apply = () => {
@@ -35,7 +37,6 @@
         document.documentElement.dataset.scheme = dark.matches ? "dark" : "light";
       };
       apply();
-      dark.addEventListener("change", apply);
       document.addEventListener("visibilitychange", apply);
 
       // TEMPORARY diagnostic for the status-bar colour: records the order of theme and
