@@ -1,0 +1,69 @@
+name: Update data and deploy
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 19 * * 0" # every Monday 03:00 Taiwan time
+  workflow_dispatch:
+
+permissions:
+  contents: write # commit refreshed data
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      # If the download or checks fail, the job stops here and the live site keeps its old data.
+      - name: Download station data
+        run: python3 -I scripts/update_stations.py
+
+      # Commits every run because the "updated" date changes. This also keeps the
+      # repo active so GitHub doesn't turn off the schedule after 60 quiet days.
+      - name: Commit refreshed data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/data/stations.json
+          if git diff --cached --quiet; then
+            echo "No data changes."
+          else
+            git commit -m "Update station data"
+            git push
+          fi
+
+      - name: Insert Google Maps settings
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ vars.GOOGLE_MAPS_API_KEY }}
+          GOOGLE_MAP_ID: ${{ vars.GOOGLE_MAP_ID }}
+        run: |
+          test -n "$GOOGLE_MAPS_API_KEY" || { echo "Set the GOOGLE_MAPS_API_KEY repository variable"; exit 1; }
+          test -n "$GOOGLE_MAP_ID" || { echo "Set the GOOGLE_MAP_ID repository variable"; exit 1; }
+          sed -i \
+            -e "s|__GOOGLE_MAPS_API_KEY__|$GOOGLE_MAPS_API_KEY|" \
+            -e "s|__GOOGLE_MAP_ID__|$GOOGLE_MAP_ID|" \
+            site/index.html
+          # New asset URLs on every deploy, so browsers don't reuse cached CSS/JS
+          sed -i "s|__BUILD__|${GITHUB_SHA::8}|g" site/index.html site/app.js
+
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v5
