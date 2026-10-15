@@ -12,10 +12,11 @@ const PAY_LABELS = [
   ["member", "會員卡"], ["easycard", "悠遊卡"], ["ipass", "一卡通"],
   ["happycash", "HappyCash"], ["einv", "電子發票"],
 ];
-const PIN_SVG = `<svg viewBox="0 0 30 38" aria-hidden="true">
-  <path class="shape" d="M15 1C7.3 1 1 7.1 1 14.6 1 24.6 15 37 15 37s14-12.4 14-22.4C29 7.1 22.7 1 15 1z"/>
-  <svg class="glyph" x="7" y="6" width="16" height="16" viewBox="0 0 24 24"><use href="#i-pump"/></svg>
-</svg>`;
+// Google Maps' own pin shape; the same blue in light and dark mode, like Google's pins
+const PIN_COLORS = {
+  open: { background: "#1a66d9", borderColor: "#0f4fae" },
+  closed: { background: "#9aa3ae", borderColor: "#7d8691" },
+};
 
 const $ = (id) => document.getElementById(id);
 
@@ -147,7 +148,7 @@ async function main() {
     el("span", { class: "count" }, "\u00a0"))); // keeps the count line's height
   $("types").replaceChildren(...typeButtons);
 
-  const [{ Map }, { AdvancedMarkerElement }, data] = await Promise.all([
+  const [{ Map }, { AdvancedMarkerElement, PinElement }, data] = await Promise.all([
     google.maps.importLibrary("maps"),
     google.maps.importLibrary("marker"),
     fetch("data/stations.json").then((r) => {
@@ -183,19 +184,28 @@ async function main() {
   let myPos = null;
   let selected = null;
 
+  // white pump from the page's icon sprite, as an image for the pin's glyph
+  const pumpPath = document.querySelector("#i-pump path").getAttribute("d");
+  const pinGlyph = "data:image/svg+xml," + encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -960 960 960"><path fill="#fff" d="${pumpPath}"/></svg>`);
+  const paintPin = (e) => Object.assign(e.pin,
+    e.closed && e !== selected ? PIN_COLORS.closed : PIN_COLORS.open,
+    { scale: e === selected ? 1.3 : 1 });
+
   const entries = data.stations.map((s) => {
-    const pin = el("div", { class: "pin", html: PIN_SVG });
+    const pin = new PinElement({ glyphSrc: pinGlyph, ...PIN_COLORS.open });
     const marker = new AdvancedMarkerElement({
       position: { lat: s.lat, lng: s.lng },
       title: s.name,
-      content: pin,
       gmpClickable: true,
     });
-    const entry = { s, marker, pin };
+    marker.append(pin);
+    const entry = { s, marker, pin, closed: false };
     marker.addEventListener("gmp-click", () => {
-      selected?.pin.classList.remove("selected");
+      const previous = selected;
       selected = entry;
-      pin.classList.add("selected");
+      if (previous) paintPin(previous);
+      paintPin(entry);
       marker.zIndex = 1;
       renderStation(s, myPos);
       // if the card covers the pin, move the map so the pin sits in the visible area
@@ -210,9 +220,12 @@ async function main() {
   });
 
   sheetCloseHandlers.station = () => {
-    selected?.pin.classList.remove("selected");
-    if (selected) selected.marker.zIndex = null;
+    const previous = selected;
     selected = null;
+    if (previous) {
+      previous.marker.zIndex = null;
+      paintPin(previous);
+    }
   };
 
   const clusterer = new markerClusterer.MarkerClusterer({
@@ -279,7 +292,13 @@ async function main() {
     $("filter-apply").textContent = `顯示 ${counts.total.toLocaleString()} 站`;
 
     const shown = entries.filter((e) => matches(e.s, state, now));
-    for (const e of entries) e.pin.classList.toggle("closed", isOpenNow(e.s, now) === false);
+    for (const e of entries) {
+      const closed = isOpenNow(e.s, now) === false;
+      if (closed !== e.closed) {
+        e.closed = closed;
+        paintPin(e);
+      }
+    }
 
     const key = shown.map((e) => e.s.id).join();
     if (key !== lastShown) {
