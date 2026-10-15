@@ -108,3 +108,11 @@ export function distanceKm(p, q) {
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(p.lat)) * Math.cos(rad(q.lat)) * Math.sin(dLng / 2) ** 2;
   return 6371 * 2 * Math.asin(Math.sqrt(h));
 }
+
+// Google Maps directions; the place ID routes to the station's own listing
+// (e.g. the right side of a highway service area), coordinates are the fallback.
+export function directionsUrl(s) {
+  const params = new URLSearchParams({ api: "1", destination: `${s.lat},${s.lng}`, travelmode: "driving" });
+  if (s.pid) params.set("destination_place_id", s.pid);
+  return `https://www.google.com/maps/dir/?${params}`;
+}

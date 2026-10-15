@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
-  FILTER_GROUPS, TYPES, isOpenNow, matches, optionCounts, distanceKm,
+  FILTER_GROUPS, TYPES, isOpenNow, matches, optionCounts, distanceKm, directionsUrl,
 } from "../site/filters.js";
 
 // 2026-10-15 12:00 in Taiwan
@@ -66,4 +66,15 @@ test("every filter option matches at least one station in the real data", () => 
   for (const group of FILTER_GROUPS) {
     for (const o of group.options) assert.ok(counts.options[o.key] > 0, `option ${o.key} is empty`);
   }
+});
+
+test("directionsUrl routes to the exact Google listing when a place ID is known", () => {
+  const s = { lat: 25.0726, lng: 121.6084, pid: "ChIJA-pXq72sQjQRVY0AMCPVELc" };
+  const url = new URL(directionsUrl(s));
+  assert.equal(url.origin + url.pathname, "https://www.google.com/maps/dir/");
+  assert.equal(url.searchParams.get("api"), "1");
+  assert.equal(url.searchParams.get("destination"), "25.0726,121.6084");
+  assert.equal(url.searchParams.get("destination_place_id"), s.pid);
+  assert.equal(url.searchParams.get("travelmode"), "driving");
+  assert.equal(new URL(directionsUrl({ lat: 1, lng: 2 })).searchParams.has("destination_place_id"), false);
 });

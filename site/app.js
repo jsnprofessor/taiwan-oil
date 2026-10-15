@@ -1,5 +1,5 @@
 import {
-  TYPES, FILTER_GROUPS, isAllDay, isOpenNow, matches, optionCounts, distanceKm,
+  TYPES, FILTER_GROUPS, isAllDay, isOpenNow, matches, optionCounts, distanceKm, directionsUrl,
 } from "./filters.js?v=__BUILD__";
 
 const TAIWAN_BOUNDS = { south: 21.9, west: 119.4, north: 25.3, east: 122.0 };
@@ -87,10 +87,6 @@ $("credit-open").addEventListener("click", () => openSheet("about"));
 
 function formatDistance(km) {
   return km < 1 ? `${Math.round(km * 1000)} 公尺` : `${km.toFixed(km < 10 ? 1 : 0)} 公里`;
-}
-
-function directionsUrl(s) {
-  return `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}&travelmode=driving`;
 }
 
 function renderStation(s, myPos) {
