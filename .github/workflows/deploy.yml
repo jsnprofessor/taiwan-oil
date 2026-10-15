@@ -60,6 +60,8 @@ jobs:
             site/index.html
           # New asset URLs on every deploy, so browsers don't reuse cached CSS/JS
           sed -i "s|__BUILD__|${GITHUB_SHA::8}|g" site/index.html site/app.js
+          # Tell search engines when the page (and its weekly data) last changed
+          sed -i "s|__LASTMOD__|$(TZ=Asia/Taipei date +%F)|" site/sitemap.xml
 
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
