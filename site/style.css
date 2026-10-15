@@ -467,6 +467,9 @@ body.sheet-open .credit {
   object-fit: cover;
 }
 
+/* Safari outlines an <img> that has no src yet (a light line on unloaded slides) */
+.st-photo img:not([src]) { visibility: hidden; }
+
 .st-photo-author {
   position: absolute;
   left: 0;
